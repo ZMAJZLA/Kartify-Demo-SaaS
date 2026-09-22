@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<!-- 
+    =======================================================================
+    KARTIFY OS
+    Copyright (c) 2026 Jamie Karter / Karter IT Solutions.
+    All Rights Reserved.
+    
+    Unauthorised copying of this file, via any medium is strictly prohibited.
+    Proprietary and confidential.
+    =======================================================================
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kartify // Workspace</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg: #09090b;
+            --surface: rgba(24, 24, 27, 0.6);
+            --surface-solid: #121214;
+            --surface-hover: rgba(39, 39, 42, 0.8);
+            --border: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            
+            --accent: #3b82f6; 
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --spring: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0; background-color: var(--bg); color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; user-select: none;
+        }
+
+        .bg-glow {
+            position: fixed; top: -30vh; left: 50%; transform: translateX(-50%);
+            width: 80vw; height: 60vh; background: var(--accent); opacity: 0.12;
+            filter: blur(120px); z-index: 0; pointer-events: none; transition: background 0.5s;
+        }
+
+        /* --- AUTHENTICATION SCREEN --- */
+        #auth-screen {
+            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+            display: flex; justify-content: center; align-items: center; transition: opacity 0.4s ease;
+        }
+        .auth-card {
+            background: rgba(18, 18, 20, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px;
+            padding: 48px; width: 100%; max-width: 440px; box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            display: flex; flex-direction: column; align-items: center; position: relative; z-index: 10;
+            backdrop-filter: blur(20px);
+        }
+        .auth-brand { font-size: 36px; font-weight: 800; letter-spacing: -1.5px; margin: 16px 0 8px; text-align: center; }
+        .auth-sub { text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 24px; width: 100%; font-weight: 500;}
+        
+        .demo-pill {
+            background: rgba(59, 130, 246, 0.1); border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; width: 100%;
+            display: flex; flex-direction: column; gap: 4px; border: 1px dashed var(--accent);
+        }
+        .demo-pill-title { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+        .demo-pill-sub { font-size: 12px; color: var(--text-muted); }
+
+        .form-container { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+        .auth-toggle { text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 20px; cursor: pointer; transition: 0.2s; font-weight: 600;}
+        .auth-toggle:hover { color: var(--text-main); }
+
+        .otp-input {
+            text-align: center; font-size: 28px; letter-spacing: 12px; font-weight: 700;
+            padding: 16px; border-radius: 12px;
+        }
+
+        /* --- LAYOUT --- */
+        #app-layout { display: none; width: 100%; height: 100%; z-index: 10; position: relative; opacity: 0; transition: opacity 0.5s;}
+        
+        .sidebar {
+            width: 260px; height: 100%; border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; padding: 24px 16px; box-sizing: border-box;
+            background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(20px);
+        }
+        
+        .brand { margin-bottom: 30px; display: flex; align-items: center; padding: 0 12px; }
+        .nav-section { font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 5px 12px; }
+        .nav-item {
+            padding: 12px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;
+            color: var(--text-muted); transition: all 0.3s var(--spring); margin-bottom: 4px; display: flex; align-items: center; gap: 12px;
+        }
+        .nav-item svg { width: 18px; height: 18px; stroke-width: 2.5; }
+        .nav-item:hover { color: var(--text-main); background: var(--surface-hover); }
+        .nav-item.active { color: #fff; background: var(--surface-hover); font-weight: 600; }
+        .nav-item.active svg { color: var(--accent); }
+
+        .sidebar-bottom { margin-top: auto; padding: 0 12px; display: flex; flex-direction: column; gap: 10px;}
+        .user-badge { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--border);}
+        .user-avatar { width: 24px; height: 24px; border-radius: 6px; background: var(--accent); display: flex; justify-content: center; align-items: center; font-size: 11px; color: #fff;}
+
+        /* --- MAIN CANVAS --- */
+        .main-canvas { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;}
+
+        .topbar {
+            height: 70px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
+            justify-content: space-between; padding: 0 40px; background: rgba(9, 9, 11, 0.6); backdrop-filter: blur(20px); z-index: 5; flex-shrink: 0;
+        }
+        
+        .search-trigger {
+            background: var(--surface); border: 1px solid var(--border); padding: 8px 16px;
+            border-radius: 20px; display: flex; align-items: center; gap: 10px; width: 250px; cursor: pointer; color: var(--text-muted); font-size: 13px; transition: 0.2s;
+        }
+        .search-trigger:hover { border-color: #555; color: #fff; }
+        .cmd-key { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-left: auto; color: #fff;}
+
+        .view-container { position: relative; flex: 1; overflow: hidden; }
+        .view-layer {
+            position: absolute; inset: 0; padding: 40px; overflow-y: auto;
+            opacity: 0; pointer-events: none; transform: translateY(10px); transition: all 0.4s var(--spring);
+        }
+        .view-layer.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+        /* --- UI COMPONENTS --- */
+        .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .metric-card { background: var(--surface-solid); border: 1px solid var(--border); border-radius: 16px; padding: 24px; transition: 0.3s; }
+        .m-title { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .m-value { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+
+        .panel { background: var(--surface-solid); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 20px;}
+        .panel-header { padding: 20px 24px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center;}
+        
+        .trends-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; padding: 24px; }
+        .trend-col { display: flex; flex-direction: column; gap: 8px; }
+        .trend-col .m-title { margin-bottom: 0; }
+        .trend-col .m-value { font-size: 24px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 16px 24px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        tr.clickable { cursor: pointer; transition: 0.2s; }
+        tr.clickable:hover td { background: rgba(255,255,255,0.03); }
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
+        .b-blue { background: rgba(59,130,246,0.1); color: #3b82f6; border: 1px solid rgba(59,130,246,0.2); }
+        .b-green { background: rgba(16,185,129,0.1); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
+        .b-purple { background: rgba(168,85,247,0.1); color: #a855f7; border: 1px solid rgba(168,85,247,0.2); }
+        .b-warn { background: rgba(245,158,11,0.1); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
+
+        /* --- KANBAN --- */
+        .kanban-wrapper { display: flex; gap: 20px; height: 100%; }
+        .k-col { flex: 1; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        .k-header { padding: 16px; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        .k-dropzone { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; transition: 0.3s; }
+        .k-dropzone.drag-over { background: var(--accent-glow); }
+        .k-card { background: var(--surface-solid); border: 1px solid var(--border); border-radius: 12px; padding: 16px; cursor: grab; position: relative; transition: 0.2s; }
+        .k-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+
+        /* --- CLIENT DRAWER --- */
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 150; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .drawer-overlay.active { opacity: 1; pointer-events: auto; }
+        .drawer { position: fixed; top: 0; right: 0; width: 600px; height: 100vh; background: var(--bg); border-left: 1px solid var(--border); z-index: 200; transform: translateX(100%); transition: transform 0.4s var(--spring); display: flex; flex-direction: column; box-shadow: -20px 0 50px rgba(0,0,0,0.8); }
+        .drawer.active { transform: translateX(0); }
+        
+        .drw-header { padding: 32px; border-bottom: 1px solid var(--border); position: relative; background: var(--surface-solid); }
+        .drw-close { position: absolute; top: 32px; right: 32px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
+        .drw-close:hover { color: #fff; }
+        .drw-avatar { width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, var(--accent), #18181b); display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 16px; border: 1px solid var(--border); }
+        .drw-title { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+        .drw-sub { font-size: 14px; color: var(--text-muted); }
+        
+        .drw-content { flex: 1; overflow-y: auto; padding: 32px; display: flex; flex-direction: column; gap: 32px; }
+        .drw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .data-block { display: flex; flex-direction: column; gap: 4px; }
+        .data-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .data-value { font-size: 14px; font-weight: 500; color: var(--text-main); }
+        
+        .insights-panel { background: linear-gradient(180deg, var(--surface-solid), var(--surface)); border: 1px solid var(--border); border-radius: 16px; padding: 24px; position: relative; overflow: hidden;}
+        .insights-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, var(--accent), var(--success)); }
+        .ins-header { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 16px; color: var(--accent); }
+        .recommendation-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+        .score-ring { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--success); display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 800; color: var(--success); }
+
+        .ai-pill {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 10px 16px;
+            font-size: 13px; font-weight: 600; color: var(--text-main); display: flex; align-items: center;
+            justify-content: space-between; margin-top: 8px; cursor: pointer; transition: 0.2s;
+            animation: fadeInPill 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .ai-pill:hover { border-color: var(--accent); background: rgba(59, 130, 246, 0.15); transform: translateY(-2px); }
+
+        /* --- FORMS & BUTTONS --- */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 24px;}
+        .form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; line-height: 1; margin: 0; padding: 0;}
+        .input-style { 
+            width: 100%; background: var(--bg); border: 1px solid var(--border); color: #fff; 
+            padding: 14px 16px; border-radius: 10px; font-family: inherit; font-size: 14px; 
+            box-sizing: border-box; outline: none; transition: 0.3s; margin: 0;
+        }
+        .input-style:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+        
+        .btn { background: var(--text-main); color: var(--bg); border: none; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;}
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,255,255,0.2); }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { box-shadow: 0 4px 15px var(--accent-glow); }
+        .btn-ghost { background: transparent; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-ghost:hover { border-color: #555; }
+        .btn-danger-ghost { background: transparent; color: var(--danger); font-size:12px; padding:6px 12px; border-radius:8px; border:1px solid transparent;}
+        .btn-danger-ghost:hover { background: rgba(239, 68, 68, 0.1); border-color: var(--danger);}
+
+        /* --- MODALS & TOASTS --- */
+        .modal-wrap { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 300; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-wrap.open { opacity: 1; pointer-events: auto; }
+        .modal { background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 600px; padding: 32px; transform: scale(0.95) translateY(20px); transition: 0.4s var(--spring); max-height: 90vh; overflow-y: auto; }
+        .modal-wrap.open .modal { transform: scale(1) translateY(0); }
+
+        #toast-box { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; z-index: 999; }
+        .toast { background: var(--surface-solid); border: 1px solid var(--border); border-left: 4px solid var(--accent); color: #fff; padding: 14px 20px; border-radius: 12px; font-size: 13px; font-weight: 500; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateX(120%); animation: toastIn 0.5s var(--spring) forwards; display: flex; align-items: center; gap: 10px; }
+        @keyframes toastIn { to { transform: translateX(0); } }
+        @keyframes toastOut { to { transform: translateX(120%); opacity: 0; } }
+
+        /* --- COMMAND PALETTE (CMD+K) --- */
+        #cmd-palette {
+            position: fixed; top: 15vh; left: 50%; transform: translateX(-50%) scale(0.95);
+            width: 100%; max-width: 600px; background: var(--surface-solid); border: 1px solid var(--border);
+            border-radius: 16px; box-shadow: 0 30px 60px rgba(0,0,0,0.8); z-index: 900;
+            opacity: 0; pointer-events: none; transition: 0.2s var(--spring); display: flex; flex-direction: column;
+        }
+        #cmd-palette.open { opacity: 1; pointer-events: auto; transform: translateX(-50%) scale(1); }
+        .cmd-input { background: transparent; border: none; padding: 24px; font-size: 18px; color: #fff; width: 100%; outline: none; border-bottom: 1px solid var(--border); font-family: inherit;}
+        .cmd-results { max-height: 300px; overflow-y: auto; padding: 10px; }
+        .cmd-item { padding: 12px 16px; border-radius: 8px; cursor: pointer; color: var(--text-muted); font-size: 14px; font-weight: 500; display: flex; justify-content: space-between;}
+        .cmd-item:hover, .cmd-item.selected { background: var(--surface-hover); color: #fff; }
+
+        /* --- PREMIUM INVOICE RENDERER (SCREEN & PRINT) --- */
+        #modal-view-invoice .modal { max-width: 800px; background: transparent; padding: 0; border: none; box-shadow: none; display:flex; flex-direction:column; overflow:hidden;}
+        .invoice-paper-wrapper { overflow-y: auto; max-height: calc(90vh - 80px); background: #f9fafb; border-radius: 16px 16px 0 0; }
+        .invoice-paper { background: #ffffff; color: #111; padding: 60px; max-width: 800px; margin: 0 auto; min-height: 500px;}
+        
+        .inv-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+        .inv-badge { background: #ecfdf5; color: #10b981; padding: 6px 16px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: inline-block; margin-bottom: 10px;}
+        .inv-badge.preview { background: #fef2f2; color: #ef4444; }
+        
+        .inv-client-box { display: flex; justify-content: space-between; margin-bottom: 40px; font-size: 14px; color: #555; }
+        .inv-client-box strong { color: #111; font-size: 18px; display: block; margin-bottom: 4px; }
+        
+        .inv-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 40px; }
+        .inv-table th { background: #f3f4f6; color: #555; font-size: 11px; text-transform: uppercase; padding: 14px 20px; text-align: left; font-weight: 700; letter-spacing: 0.5px;}
+        .inv-table th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+        .inv-table th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; text-align: right; }
+        .inv-table td { padding: 16px 20px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #333; }
+        .inv-table td:last-child { text-align: right; font-weight: 700; color: #111;}
+        
+        .inv-totals-wrap { display: flex; justify-content: flex-end; margin-bottom: 40px; }
+        .inv-totals-box { background: #fafafa; border: 1px solid #eaeaea; border-radius: 12px; padding: 24px; width: 320px; }
+        .inv-total-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: #555; }
+        .inv-total-row.grand { border-top: 1px solid #eaeaea; padding-top: 16px; margin-top: 8px; margin-bottom: 0; font-size: 24px; font-weight: 800; color: var(--accent); }
+        
+        .inv-footer { text-align: center; padding-top: 30px; border-top: 1px solid #eaeaea; color: #888; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 15px;}
+        .inv-footer-brand { display: flex; align-items: center; gap: 6px; font-weight: 700; color: #aaa; }
+        
+        .invoice-actions { display: flex; justify-content: space-between; padding: 20px 30px; background: #f3f4f6; border-top: 1px solid #e5e7eb; border-radius: 0 0 16px 16px; }
+        .inv-close-x { position: absolute; top: 15px; right: 20px; background: #e5e7eb; color: #555; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 10; transition: 0.2s;}
+        .inv-close-x:hover { background: #d1d5db; color: #111; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #modal-view-invoice, #modal-view-invoice * { visibility: visible; }
+            #modal-view-invoice { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; background: #fff !important; }
+            .modal-wrap { background: none; backdrop-filter: none; position: static;}
+            .modal { max-width: none; border: none; box-shadow: none; padding: 0; transform: none !important;}
+            .invoice-paper-wrapper { max-height: none; overflow: visible; background: #fff; border-radius: 0; }
+            .invoice-paper { box-shadow: none; padding: 20px; border-radius: 0; max-width: 100%;}
+            .invoice-actions, .inv-close-x, .print-hide { display: none !important; }
+            .invoice-paper * { color: #000 !important; }
+            .inv-badge { background: #eee !important; color: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
+            .inv-totals-box { background: #fafafa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+
+    <svg style="display:none;">
+        <defs>
+            <linearGradient id="kartify-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="var(--accent)"/>
+                <stop offset="100%" stop-color="#ffffff"/>
+            </linearGradient>
+            <linearGradient id="kartify-grad-faded" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="var(--accent)"/>
+                <stop offset="100%" stop-opacity="0.2" stop-color="var(--accent)"/>
+            </linearGradient>
+        </defs>
+        <symbol id="kartify-logo-svg" viewBox="0 0 100 100">
+            <rect x="22" y="15" width="16" height="70" rx="8" fill="url(#kartify-grad)" />
+            <path d="M35 50 L75 15 C 80 11 88 15 85 22 L45 55 Z" fill="url(#kartify-grad-faded)"/>
+            <path d="M38 48 L85 80 C 90 84 83 92 77 88 L35 55 Z" fill="#ffffff"/>
+        </symbol>
+    </svg>
+
+    <!-- AUTHENTICATION SCREEN -->
+    <div id="auth-screen">
+        <!-- LOGIN CARD -->
+        <div class="auth-card" id="auth-login">
+            <div class="kartify-brand brand-auth"><span class="k-w">KART</span><span class="i-b">IFY</span></div>
+            <div class="auth-sub">Access your secure workspace</div>
+            
+            <div class="demo-pill">
+                <div class="demo-pill-title">GitHub Demo Mode</div>
+                <div class="demo-pill-sub">Click below to instantly launch the pre-seeded workspace as Jamie Karter.</div>
+                <button class="btn btn-primary" style="margin-top:8px; padding:10px; font-size:12px; background:var(--accent);" onclick="loginDemoAccount()">Launch Demo Workspace</button>
+            </div>
+
+            <div class="form-container">
+                <div class="form-group" style="margin-bottom:0;"><label>Email Address</label><input type="email" id="login-email" class="input-style" placeholder="demo@kartify.com"></div>
+                <div class="form-group" style="margin-bottom:0;"><label>Security Key</label><input type="password" id="login-pass" class="input-style" placeholder="••••••••"></div>
+                <button class="btn btn-ghost" id="btn-login" style="width: 100%; margin-top: 10px; padding: 14px;" onclick="handleLogin()">Authorise Access</button>
+                <div class="auth-toggle" onclick="switchAuthView('signup')">Create new workspace account</div>
+            </div>
+        </div>
+
+        <!-- SIGNUP CARD -->
+        <div class="auth-card" id="auth-signup" style="display: none;">
+            <div class="kartify-brand brand-auth"><span class="k-w">KART</span><span class="i-b">IFY</span></div>
+            <div class="auth-sub">Initialise a new workspace</div>
+            
+            <div class="form-container">
+                <div class="form-group" style="margin-bottom:0;"><label>Company Name</label><input type="text" id="reg-company" class="input-style" placeholder="Acme Corp"></div>
+                <div class="form-group" style="margin-bottom:0;"><label>Your Name</label><input type="text" id="reg-name" class="input-style" placeholder="John Doe"></div>
+                <div class="form-group" style="margin-bottom:0;"><label>Email Address</label><input type="email" id="reg-email" class="input-style" placeholder="name@company.com"></div>
+                <div class="form-group" style="margin-bottom:0;"><label>Security Key</label><input type="password" id="reg-pass" class="input-style" placeholder="••••••••"></div>
+                <button class="btn btn-primary" id="btn-signup" style="width: 100%; margin-top: 10px; padding: 14px;" onclick="handleSignup()">Initialise Workspace</button>
+                <div class="auth-toggle" onclick="switchAuthView('login')">Return to login</div>
+            </div>
+        </div>
+
+        <!-- VERIFY OTP CARD -->
+        <div class="auth-card" id="auth-verify" style="display: none;">
+            <div class="kartify-brand brand-auth"><span class="k-w">KART</span><span class="i-b">IFY</span></div>
+            <div class="auth-sub" id="verify-sub">Enter the 6-digit code sent to your email.</div>
+            
+            <div class="form-container">
+                <div class="form-group" style="margin-bottom:0;">
+                    <input type="text" id="verify-code" class="input-style otp-input" placeholder="000000" maxlength="6">
+                </div>
+                <button class="btn btn-primary" id="btn-verify" style="width: 100%; margin-top: 10px; padding: 14px;" onclick="handleVerify()">Verify Account</button>
+                <div class="auth-toggle" onclick="switchAuthView('signup')">Cancel Registration</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP LAYOUT -->
+    <div id="app-layout">
+        <div class="sidebar">
+            <div class="brand">
+                <div class="kartify-brand brand-nav"><span class="k-w">KART</span><span class="i-b">IFY</span></div>
+            </div>
+            
+            <div class="nav-section">Workspace</div>
+            <div class="nav-item active" onclick="route('dashboard', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Overview</div>
+            <div class="nav-item" onclick="route('orders', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg> Order Pipeline</div>
+            <div class="nav-item" onclick="route('invoices', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Invoices & Billing</div>
+            <div class="nav-item" onclick="route('catalogue', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg> Catalogue</div>
+            <div class="nav-item" onclick="route('clients', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg> Directory</div>
+            <div class="nav-item" onclick="route('analytics', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg> Financials</div>
+            
+            <div class="nav-section">System</div>
+            <div class="nav-item" onclick="route('settings', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path></svg> Customisation</div>
+            <div class="nav-item" onclick="route('founder', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> The Founder</div>
+            
+            <div class="sidebar-bottom">
+                <div class="user-badge">
+                    <div class="user-avatar" id="ui-avatar">A</div>
+                    <div style="flex:1;">
+                        <div id="ui-user" style="line-height:1.2;">Admin</div>
+                        <div style="font-size:10px; color:var(--text-muted); font-weight:400;">Workspace Admin</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px; cursor:pointer;" onclick="handleLogout()"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-canvas">
+            <div class="topbar">
+                <div class="search-trigger" onclick="openCmdPalette()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px;"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+                    Search or command...
+                    <span class="cmd-key">⌘ K</span>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-ghost" onclick="openModal('modal-client')">Onboard Client</button>
+                    <button class="btn btn-primary" onclick="openOrderModal()">New Order</button>
+                </div>
+            </div>
+
+            <div class="view-container">
+                <!-- DASHBOARD -->
+                <div class="view-layer active" id="view-dashboard">
+                    <h2 style="margin-top:0;">System Overview</h2>
+                    <div class="metric-grid">
+                        <div class="metric-card"><div class="m-title">Gross Revenue</div><div class="m-value" id="kpi-rev">£0.00</div></div>
+                        <div class="metric-card"><div class="m-title">Active Orders</div><div class="m-value" id="kpi-ord">0</div></div>
+                        <div class="metric-card"><div class="m-title">Client Base</div><div class="m-value" id="kpi-cli">0</div></div>
+                        <div class="metric-card"><div class="m-title">Stock Lines</div><div class="m-value" id="kpi-prd">0</div></div>
+                    </div>
+                </div>
+
+                <!-- ORDERS / KANBAN -->
+                <div class="view-layer" id="view-orders">
+                    <div class="kanban-wrapper">
+                        <div class="k-col"><div class="k-header">Pending</div><div class="k-dropzone" id="col-Pending"></div></div>
+                        <div class="k-col"><div class="k-header">Processing</div><div class="k-dropzone" id="col-Processing"></div></div>
+                        <div class="k-col"><div class="k-header">Completed</div><div class="k-dropzone" id="col-Completed"></div></div>
+                    </div>
+                </div>
+
+                <!-- INVOICES -->
+                <div class="view-layer" id="view-invoices">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div>Client Invoicing</div>
+                            <button class="btn btn-ghost" style="padding: 6px 12px; font-size:12px;" onclick="openModal('modal-invoice')">+ Generate Invoice</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>Invoice ID</th><th>Client</th><th>Gross Amount</th><th>Platform Fee (1.9%)</th><th>Net Payout</th><th>Actions</th></tr></thead>
+                            <tbody id="list-invoices"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CATALOGUE -->
+                <div class="view-layer" id="view-catalogue">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div>Product & Service Catalogue</div>
+                            <button class="btn btn-ghost" style="padding: 6px 12px;" onclick="openModal('modal-product')">+ Add Item</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>Item Name</th><th>Category</th><th>Type</th><th>Cost</th><th>Sale Price</th><th>Stock</th></tr></thead>
+                            <tbody id="list-products"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div>Promotional Discount Codes</div>
+                            <button class="btn btn-ghost" style="padding: 6px 12px;" onclick="openModal('modal-discount')">+ Create Code</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>Promo Code</th><th>Discount Type</th><th>Value</th><th>Actions</th></tr></thead>
+                            <tbody id="list-discounts"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CLIENTS -->
+                <div class="view-layer" id="view-clients">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div>Client Directory</div>
+                            <button class="btn btn-ghost" style="padding: 6px 12px; font-size:12px;" onclick="exportCSV('clients')">Export CSV</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>Company / Name</th><th>Industry</th><th>Email</th><th>Total Spend</th></tr></thead>
+                            <tbody id="list-clients"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS -->
+                <div class="view-layer" id="view-analytics">
+                    <h2 style="margin-top:0;">Financial Analytics & Projections</h2>
+                    <div class="metric-grid" style="grid-template-columns: repeat(5, 1fr);">
+                        <div class="metric-card"><div class="m-title">Gross Revenue</div><div class="m-value" id="fin-rev" style="color:var(--success); font-size:26px;">£0.00</div></div>
+                        <div class="metric-card"><div class="m-title">Cost of Goods</div><div class="m-value" id="fin-cogs" style="color:var(--danger); font-size:26px;">£0.00</div></div>
+                        <div class="metric-card"><div class="m-title">Platform Fees</div><div class="m-value" id="fin-fees" style="color:var(--danger); font-size:26px;">£0.00</div></div>
+                        <div class="metric-card"><div class="m-title">Net Profit</div><div class="m-value" id="fin-profit" style="font-size:26px;">£0.00</div></div>
+                        <div class="metric-card"><div class="m-title">Profit Margin</div><div class="m-value" id="fin-margin" style="font-size:26px;">0%</div></div>
+                    </div>
+                    
+                    <div class="panel">
+                        <div class="panel-header">Extrapolated Trends (Based on active timeline)</div>
+                        <div class="trends-grid">
+                            <div class="trend-col"><div class="m-title">Daily</div><div class="m-value" id="proj-day">£0.00</div></div>
+                            <div class="trend-col"><div class="m-title">Weekly</div><div class="m-value" id="proj-week">£0.00</div></div>
+                            <div class="trend-col"><div class="m-title">Monthly</div><div class="m-value" id="proj-month">£0.00</div></div>
+                            <div class="trend-col"><div class="m-title">Quarterly</div><div class="m-value" id="proj-quart">£0.00</div></div>
+                            <div class="trend-col"><div class="m-title">Yearly</div><div class="m-value" id="proj-year" style="color:var(--accent);">£0.00</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS -->
+                <div class="view-layer" id="view-settings">
+                    <h2 style="margin-top:0;">Workspace Customisation</h2>
+                    <div style="display:flex; flex-direction:column; gap:20px; max-width:600px;">
+                        
+                        <div class="panel" style="margin:0;">
+                            <div class="panel-header">Brand Identity</div>
+                            <div class="panel-content">
+                                <div class="form-group"><label>Company Name</label><input type="text" id="set-comp" class="input-style"></div>
+                                <div class="form-group"><label>Custom Business Logo (Image URL)</label><input type="text" id="set-logo" class="input-style" placeholder="https://yourdomain.com/logo.png"></div>
+                                <div class="form-group"><label>Brand Accent Colour</label><input type="color" id="set-color" class="input-style" style="height:48px; padding:5px; cursor:pointer;"></div>
+                            </div>
+                        </div>
+
+                        <div class="panel" style="margin:0;">
+                            <div class="panel-header">User Profile</div>
+                            <div class="panel-content">
+                                <div class="form-group"><label>Your Name</label><input type="text" id="set-name" class="input-style"></div>
+                                <button class="btn btn-primary" onclick="saveSettings()">Apply Preferences</button>
+                            </div>
+                        </div>
+
+                        <div class="panel" style="margin:0; border-color:rgba(239, 68, 68, 0.3);">
+                            <div class="panel-header" style="color:var(--danger);">Data Management</div>
+                            <div class="panel-content">
+                                <p style="font-size:13px; color:var(--text-muted); margin-top:0; margin-bottom:15px;">Permanently delete all workspace data. This action cannot be undone.</p>
+                                <button class="btn btn-danger" onclick="wipeAccount()">Delete Workspace Data</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FOUNDER PAGE -->
+                <div class="view-layer" id="view-founder">
+                    <h2 style="margin-top:0; margin-bottom:40px;">The Founder</h2>
+                    <div class="panel" style="max-width: 800px; padding:40px; background: rgba(24,24,27,0.4);">
+                        <div style="display: flex; gap: 30px; align-items: flex-start;">
+                            <div style="width: 120px; height: 120px; border-radius: 20px; background: linear-gradient(135deg, var(--accent), #18181b); border: 2px solid var(--border); display: flex; justify-content: center; align-items: center; font-size: 40px; font-weight: 800; color: #fff; box-shadow: 0 10px 30px var(--accent-glow);">JK</div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 32px; font-weight: 800; margin-bottom: 5px;">Jamie Karter</div>
+                                <div style="color: var(--accent); font-weight: 600; margin-bottom: 20px; text-transform: uppercase; font-size: 14px; letter-spacing: 1px;">Founder & Lead Engineer — Karter IT Solutions</div>
+                                <div style="color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; font-size: 15px;">
+                                    Kartify was engineered from the ground up by Jamie Karter to provide businesses with a lightning-fast, highly secure, and visually striking alternative to legacy CRM systems. 
+                                    <br><br>
+                                    Designed with modern data architecture and a relentless focus on the user experience, Karter IT Solutions builds software that scales securely in the browser, eliminating the bloated overhead of traditional enterprise applications.
+                                </div>
+                                <div style="display:flex; gap:15px;">
+                                    <a href="https://www.karteritsolutions.net" target="_blank" class="btn btn-primary" style="text-decoration:none;">Visit Official Website</a>
+                                    <a href="mailto:jamie@karteritsolutions.net" class="btn btn-ghost" style="text-decoration:none;">Contact the Founder</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- CLIENT DRAWER -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+    <div class="drawer" id="client-drawer">
+        <div class="drw-header">
+            <button class="drw-close" onclick="closeDrawer()"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <div class="drw-avatar" id="drw-avatar">C</div>
+            <div class="drw-title" id="drw-name">Client Name</div>
+            <div class="drw-sub" id="drw-company">Company | Industry</div>
+        </div>
+        
+        <div class="drw-content">
+            <div class="drw-grid">
+                <div class="data-block"><span class="data-label">Contact Email</span><span class="data-value" id="drw-email">...</span></div>
+                <div class="data-block"><span class="data-label">Phone Number</span><span class="data-value" id="drw-phone">...</span></div>
+                <div class="data-block"><span class="data-label">Tags / Profile</span><span class="data-value" id="drw-tags">...</span></div>
+                <div class="data-block"><span class="data-label">Lifetime Value (LTV)</span><span class="data-value" id="drw-ltv" style="color:var(--success); font-weight:700;">£0.00</span></div>
+            </div>
+            
+            <div class="insights-panel">
+                <div class="ins-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path></svg>Algorithmic Insights Engine</div>
+                <div style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">Based on historical order data and industry profiling, Kartify AI predicts the following Next Best Action to maximise retention and cross-sell revenue.</div>
+                <div class="recommendation-card" id="drw-ai-recommendation"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header" style="padding:15px; font-size:13px;">Recent Order History</div>
+                <div style="padding:15px; display:flex; flex-direction:column; gap:10px;" id="drw-history"></div>
+            </div>
+
+            <button class="btn btn-danger-ghost" style="margin-top:auto; padding:12px; border:1px solid var(--danger); text-align:center; border-radius:10px;" onclick="deleteDrawerClient()">Remove Client Profile</button>
+        </div>
+    </div>
+
+    <!-- COMMAND PALETTE (Spotlight) -->
+    <div id="cmd-overlay" class="drawer-overlay" onclick="closeCmdPalette()"></div>
+    <div id="cmd-palette">
+        <input type="text" id="cmd-input" class="cmd-input" placeholder="What do you want to do?" onkeyup="filterCmd()">
+        <div class="cmd-results" id="cmd-results"></div>
+    </div>
+
+    <!-- MODALS -->
+    <div class="modal-wrap" id="modal-invoice">
+        <div class="modal">
+            <h2 style="margin:0 0 24px; font-size:18px;">Generate Client Invoice</h2>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:20px;">Kartify applies a highly competitive 1.9% flat processing fee (Cheaper than PayPal's 2.9%).</div>
+            <div class="form-group"><label>Select Order</label><select id="inp-inv-order" class="input-style enter-inv"></select></div>
+            <div class="form-group"><label>Custom Payment Link</label><input type="url" id="inp-inv-link" class="input-style enter-inv" placeholder="https://buy.stripe.com/..."></div>
+            <div style="display:flex; justify-content:space-between; margin-top:30px; align-items:center;">
+                <button class="btn btn-ghost" onclick="previewInvoice()">Preview Invoice</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-ghost" style="border:none;" onclick="closeModals()">Cancel</button>
+                    <button class="btn btn-primary" id="btn-save-inv" onclick="createInvoice()">Generate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREMIUM INVOICE PREVIEW MODAL -->
+    <div class="modal-wrap" id="modal-view-invoice">
+        <div class="modal">
+            <button class="inv-close-x" onclick="closeModals()">✕</button>
+            <div class="invoice-paper-wrapper">
+                <div class="invoice-paper" id="invoice-render-target"></div>
+            </div>
+            <div class="invoice-actions">
+                <button class="btn btn-ghost" style="background:#fff; color:#374151; border:1px solid #ccc;" onclick="window.print()">Export as PDF</button>
+                <button class="btn btn-primary" onclick="closeModals()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-wrap" id="modal-product">
+        <div class="modal">
+            <h2 style="margin:0 0 24px; font-size:18px;">Add Catalogue Item</h2>
+            <div class="form-group" style="position: relative;">
+                <label>Item Name</label>
+                <input type="text" id="inp-prd-name" class="input-style enter-prd" placeholder="e.g. Premium Support Tier" onkeyup="checkAISuggestion()">
+                <div id="ai-suggestion-box"></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="inp-prd-category" class="input-style enter-prd">
+                        <option value="Software">Software</option>
+                        <option value="Services">Services & Consulting</option>
+                        <option value="Hardware">Hardware & Equipment</option>
+                        <option value="Physical Goods">Physical Goods / Apparel</option>
+                        <option value="Subscription">Subscription / Retainer</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Item Type</label>
+                    <select id="inp-prd-type" class="input-style enter-prd" onchange="toggleStockField()">
+                        <option value="digital">Digital / Service (Invisible Stock)</option>
+                        <option value="physical">Physical Product</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label>Cost Price (£)</label><input type="number" id="inp-prd-cost" class="input-style enter-prd" value="0.00" step="0.01"></div>
+                <div class="form-group"><label>Sale Price (£)</label><input type="number" id="inp-prd-sale" class="input-style enter-prd" value="0.00" step="0.01"></div>
+            </div>
+            <div class="form-group" id="stock-group" style="display:none;"><label>Initial Stock Level</label><input type="number" id="inp-prd-stock" class="input-style enter-prd" value="0"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-prd" onclick="createProduct()">Save Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DISCOUNT MODAL -->
+    <div class="modal-wrap" id="modal-discount">
+        <div class="modal">
+            <h2 style="margin:0 0 24px; font-size:18px;">Create Promotional Code</h2>
+            <div class="form-group"><label>Promo Code (e.g. VIP20)</label><input type="text" id="inp-dsc-code" class="input-style" style="text-transform:uppercase;"></div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Discount Type</label>
+                    <select id="inp-dsc-type" class="input-style">
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="flat">Flat Amount (£)</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Value</label><input type="number" id="inp-dsc-val" class="input-style" value="0"></div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-primary" onclick="createDiscount()">Save Promo</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-wrap" id="modal-order">
+        <div class="modal" style="max-width:700px;">
+            <h2 style="margin:0 0 24px; font-size:18px;">Initialise Order</h2>
+            
+            <div class="form-group">
+                <label>Select Client</label>
+                <select id="inp-ord-client" class="input-style enter-ord" onchange="checkClientLoyalty()"></select>
+                <div id="loyalty-suggestion-box"></div>
+            </div>
+            
+            <div style="border-top:1px solid var(--border); padding-top:20px; margin-bottom:10px; font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Order Items</div>
+            <div id="ord-items-list" style="display:flex; flex-direction:column; gap:15px; margin-bottom:15px;"></div>
+            <button class="btn btn-ghost" style="width:100%; border-style:dashed;" onclick="addOrdItemRow()">+ Add Another Item</button>
+            
+            <div class="form-group" style="margin-top:20px;">
+                <label>Apply Promotional Code</label>
+                <select id="inp-ord-discount" class="input-style enter-ord"></select>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:30px;">
+                <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-ord" onclick="createOrder()">Process Order</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-wrap" id="modal-client">
+        <div class="modal">
+            <h2 style="margin:0 0 24px; font-size:18px;">Onboard Client</h2>
+            <div class="form-grid">
+                <div class="form-group"><label>Company Name</label><input type="text" id="inp-cli-company" class="input-style enter-cli" placeholder="Acme Ltd"></div>
+                <div class="form-group"><label>Primary Contact Name</label><input type="text" id="inp-cli-name" class="input-style enter-cli" placeholder="John Doe"></div>
+                <div class="form-group"><label>Email Address</label><input type="email" id="inp-cli-email" class="input-style enter-cli" placeholder="contact@domain.com"></div>
+                <div class="form-group"><label>Phone Number</label><input type="text" id="inp-cli-phone" class="input-style enter-cli" placeholder="07..."></div>
+                <div class="form-group">
+                    <label>Industry</label>
+                    <select id="inp-cli-industry" class="input-style enter-cli">
+                        <option value="E-Commerce">E-Commerce</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Technology">Technology / SaaS</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Tags (Comma separated)</label><input type="text" id="inp-cli-tags" class="input-style enter-cli" placeholder="VIP, Enterprise..."></div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-cli" onclick="createClient()">Save Client</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-box"></div>
+
+    <script>
+        let globalDB = { users: [] };
+        let activeUserId = null;
+        let uData = null; 
+        let activeDrawerClientId = null;
+        
+        let pendingSignupUser = null;
+        let expectedVerificationCode = null;
+
+        // --- DEMO SEED DATA LOGIC ---
+        function seedDemoAccount() {
+            const demoEmail = "demo@kartify.com";
+            let existingDemo = globalDB.users.find(u => u.email === demoEmail);
+            
+            const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+
+            const demoUserObj = {
+                id: "DEMO_USER_999",
+                email: demoEmail,
+                pass: "demo123",
+                settings: {
+                    companyName: "Karter IT Solutions",
+                    userName: "Jamie Karter",
+                    colour: "#3b82f6",
+                    logo: "",
+                    createdAt: thirtyDaysAgo
+                },
+                clients: [
+                    { id: "CLI_01", company: "Acme Technology Ltd", name: "Sarah Jenkins", email: "s.jenkins@acmecorp.co.uk", phone: "0191 234 5678", industry: "Technology", tags: "VIP, Retainer" },
+                    { id: "CLI_02", company: "Apex Retail Group", name: "Marcus Vance", email: "m.vance@apexretail.co.uk", phone: "020 7946 0912", industry: "E-Commerce", tags: "High Volume" },
+                    { id: "CLI_03", company: "Nexus Healthcare", name: "Dr. Elena Rostova", email: "e.rostova@nexushealth.org", phone: "0161 496 0321", industry: "Healthcare", tags: "Enterprise" },
+                    { id: "CLI_04", company: "Pulse Media Studio", name: "David Croft", email: "d.croft@pulsemedia.io", phone: "0113 496 0122", industry: "Technology", tags: "Fast Growth" }
+                ],
+                products: [
+                    { id: "PRD_01", name: "Custom Website Development", category: "Services", type: "digital", cost: "150.00", sale: "850.00", stock: 0 },
+                    { id: "PRD_02", name: "SEO & Digital Marketing Package", category: "Services", type: "digital", cost: "50.00", sale: "250.00", stock: 0 },
+                    { id: "PRD_03", name: "Managed Cloud Hosting", category: "Software", type: "digital", cost: "15.00", sale: "65.00", stock: 0 },
+                    { id: "PRD_04", name: "Monthly IT Retainer", category: "Subscription", type: "digital", cost: "40.00", sale: "350.00", stock: 0 },
+                    { id: "PRD_05", name: "Branded Cotton Hoodie", category: "Physical Goods", type: "physical", cost: "12.00", sale: "45.00", stock: 4 }, 
+                    { id: "PRD_06", name: "Enterprise Hardware Firewall", category: "Hardware", type: "physical", cost: "180.00", sale: "499.00", stock: 18 }
+                ],
+                discounts: [
+                    { id: "DSC_01", code: "WELCOME10", type: "percentage", value: 10 },
+                    { id: "DSC_02", code: "VIPLOYALTY", type: "flat", value: 50 }
+                ],
+                orders: [
+                    { id: "ORD_881", clientId: "CLI_01", items: [{ productId: "PRD_01", qty: 1, price: "850.00" }, { productId: "PRD_03", qty: 2, price: "65.00" }], totalPrice: "980.00", discountId: "", discountAmount: "0.00", status: "Completed", date: Date.now() - 15000000 },
+                    { id: "ORD_882", clientId: "CLI_02", items: [{ productId: "PRD_05", qty: 3, price: "45.00" }], totalPrice: "135.00", discountId: "", discountAmount: "0.00", status: "Completed", date: Date.now() - 8000000 },
+                    { id: "ORD_883", clientId: "CLI_03", items: [{ productId: "PRD_04", qty: 1, price: "350.00" }], totalPrice: "350.00", discountId: "", discountAmount: "0.00", status: "Processing", date: Date.now() - 3000000 },
+                    { id: "ORD_884", clientId: "CLI_04", items: [{ productId: "PRD_02", qty: 1, price: "250.00" }], totalPrice: "250.00", discountId: "", discountAmount: "0.00", status: "Pending", date: Date.now() - 100000 }
+                ],
+                invoices: [
+                    { id: "INV_901", orderId: "ORD_881", link: "https://buy.stripe.com/demo_invoice_1", total: 980.00, fee: 18.62, net: 961.38, date: Date.now() - 14000000 },
+                    { id: "INV_902", orderId: "ORD_882", link: "https://buy.stripe.com/demo_invoice_2", total: 135.00, fee: 2.57, net: 132.43, date: Date.now() - 7000000 }
+                ]
+            };
+
+            if(!existingDemo) {
+                globalDB.users.push(demoUserObj);
+            } else {
+                const idx = globalDB.users.findIndex(u => u.email === demoEmail);
+                globalDB.users[idx] = demoUserObj;
+            }
+            localStorage.setItem('kartify_DB_v8', JSON.stringify(globalDB));
+        }
+
+        function loginDemoAccount() {
+            seedDemoAccount();
+            const demoUser = globalDB.users.find(u => u.email === "demo@kartify.com");
+            loginSuccess(demoUser);
+        }
+
+        // --- PREDICTIVE CATALOGUE AI ---
+        const predictiveCatalogue = [
+            { keys: ["hoodie", "jumper", "sweater", "fleece"], rec: { name: "Premium Cotton Hoodie", category: "Physical Goods", type: "physical" } },
+            { keys: ["t-shirt", "shirt", "tee"], rec: { name: "Graphic T-Shirt", category: "Physical Goods", type: "physical" } },
+            { keys: ["website", "web design", "ecommerce", "landing page"], rec: { name: "Custom Website Development", category: "Services", type: "digital" } },
+            { keys: ["seo", "optimisation", "marketing", "ads"], rec: { name: "SEO & Digital Marketing Package", category: "Services", type: "digital" } },
+            { keys: ["hosting", "server", "cloud", "domain"], rec: { name: "Managed Cloud Hosting", category: "Software", type: "digital" } },
+            { keys: ["support", "it support", "maintenance", "audit"], rec: { name: "Monthly IT Retainer", category: "Subscription", type: "digital" } },
+            { keys: ["repair", "fix", "pc", "laptop", "hardware"], rec: { name: "Hardware Diagnostics & Repair", category: "Services", type: "digital" } },
+            { keys: ["network", "wifi", "router", "firewall"], rec: { name: "Enterprise Network Setup", category: "Services", type: "digital" } },
+            { keys: ["consulting", "strategy", "planning"], rec: { name: "Strategic Business Consulting", category: "Services", type: "digital" } },
+            { keys: ["design", "logo", "branding", "graphics"], rec: { name: "Complete Brand Identity Kit", category: "Services", type: "digital" } },
+            { keys: ["social", "instagram", "tiktok"], rec: { name: "Social Media Management", category: "Subscription", type: "digital" } }
+        ];
+
+        function checkAISuggestion() {
+            const val = document.getElementById('inp-prd-name').value.toLowerCase();
+            const box = document.getElementById('ai-suggestion-box');
+            if(val.length < 2) { box.innerHTML = ''; return; }
+            
+            let match = predictiveCatalogue.find(dict => dict.keys.some(k => val.includes(k)));
+            
+            if(match) {
+                const rec = match.rec;
+                box.innerHTML = `
+                    <div class="ai-pill" onclick='autofillProduct(${JSON.stringify(rec)})'>
+                        <div style="display:flex; align-items:center;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            Generate Related: ${rec.name}
+                        </div>
+                        <span style="font-size:11px; opacity:0.8;">Click to Categorise</span>
+                    </div>
+                `;
+            } else { box.innerHTML = ''; }
+        }
+
+        function autofillProduct(rec) {
+            document.getElementById('inp-prd-name').value = rec.name;
+            document.getElementById('inp-prd-category').value = rec.category;
+            document.getElementById('inp-prd-type').value = rec.type;
+            toggleStockField();
+            document.getElementById('ai-suggestion-box').innerHTML = '';
+            toast("Category logic applied. Please enter your pricing.");
+            document.getElementById('inp-prd-sale').focus();
+        }
+
+        function checkClientLoyalty() {
+            const clientId = document.getElementById('inp-ord-client').value;
+            const box = document.getElementById('loyalty-suggestion-box');
+            box.innerHTML = '';
+            if(!clientId) return;
+
+            const cOrders = uData.orders.filter(o => o.clientId === clientId);
+            
+            if (cOrders.length === 0) {
+                const bestDiscount = uData.discounts.filter(d => d.type === 'percentage').sort((a,b) => b.value - a.value)[0];
+                if(bestDiscount) {
+                    box.innerHTML = `<div class="ai-pill" onclick="document.getElementById('inp-ord-discount').value='${bestDiscount.id}'; this.remove();"><div style="display:flex; align-items:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px; margin-right:8px;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> First-Time Buyer: Apply ${bestDiscount.code} (-${bestDiscount.value}%)</div><span style="font-size:11px; opacity:0.8;">Apply Promo</span></div>`;
+                }
+            } else if (cOrders.length >= 3) {
+                const bestDiscount = uData.discounts[0]; 
+                if(bestDiscount) {
+                    let dStr = bestDiscount.type === 'percentage' ? `${bestDiscount.value}%` : `£${bestDiscount.value}`;
+                    box.innerHTML = `<div class="ai-pill" onclick="document.getElementById('inp-ord-discount').value='${bestDiscount.id}'; this.remove();"><div style="display:flex; align-items:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px; margin-right:8px;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg> Loyal Client (${cOrders.length} orders): Apply ${bestDiscount.code} (-${dStr})</div><span style="font-size:11px; opacity:0.8;">Apply Promo</span></div>`;
+                }
+            }
+        }
+
+        // --- COMMAND PALETTE (Cmd+K) ---
+        function openCmdPalette() {
+            document.getElementById('cmd-overlay').classList.add('active');
+            const pal = document.getElementById('cmd-palette');
+            pal.classList.add('open');
+            document.getElementById('cmd-input').value = '';
+            document.getElementById('cmd-input').focus();
+            filterCmd();
+        }
+        function closeCmdPalette() {
+            document.getElementById('cmd-overlay').classList.remove('active');
+            document.getElementById('cmd-palette').classList.remove('open');
+        }
+
+        const actions = [
+            { name: "Go to Dashboard", act: () => route('dashboard', document.querySelectorAll('.nav-item')[0]) },
+            { name: "Go to Orders", act: () => route('orders', document.querySelectorAll('.nav-item')[1]) },
+            { name: "Create New Order", act: () => openOrderModal() },
+            { name: "Onboard New Client", act: () => openModal('modal-client') },
+            { name: "Generate Invoice", act: () => openModal('modal-invoice') },
+            { name: "Open Settings", act: () => route('settings', document.querySelectorAll('.nav-item')[6]) }
+        ];
+
+        function filterCmd() {
+            const q = document.getElementById('cmd-input').value.toLowerCase();
+            const res = document.getElementById('cmd-results');
+            res.innerHTML = '';
+            
+            actions.filter(a => a.name.toLowerCase().includes(q)).forEach(a => {
+                const div = document.createElement('div');
+                div.className = 'cmd-item'; div.innerHTML = `<span>⚡️ ${a.name}</span><span style="font-size:10px;">Action</span>`;
+                div.onclick = () => { closeCmdPalette(); a.act(); };
+                res.appendChild(div);
+            });
+
+            if(uData && uData.clients) {
+                uData.clients.filter(c => c.name.toLowerCase().includes(q) || (c.company&&c.company.toLowerCase().includes(q))).forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'cmd-item'; div.innerHTML = `<span>👤 ${c.company || c.name}</span><span style="font-size:10px;">Client</span>`;
+                    div.onclick = () => { closeCmdPalette(); route('clients', document.querySelectorAll('.nav-item')[4]); };
+                    res.appendChild(div);
+                });
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openCmdPalette(); }
+            if (e.key === 'Escape') { closeCmdPalette(); closeModals(); }
+        });
+
+        function bindEnterKeys() {
+            const bindGrp = (className, btnId) => {
+                document.querySelectorAll(className).forEach(el => {
+                    el.addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById(btnId).click(); });
+                });
+            };
+            document.getElementById('login-pass').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('btn-login').click(); });
+            document.getElementById('reg-pass').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('btn-signup').click(); });
+            document.getElementById('verify-code').addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('btn-verify').click(); });
+            bindGrp('.enter-prd', 'btn-save-prd');
+            bindGrp('.enter-ord', 'btn-save-ord');
+            bindGrp('.enter-cli', 'btn-save-cli');
+            bindGrp('.enter-inv', 'btn-save-inv');
+        }
+
+        // --- AUTH & SYSTEM ---
+        function init() {
+            const mem = localStorage.getItem('kartify_DB_v8');
+            if(mem) globalDB = JSON.parse(mem);
+            bindEnterKeys();
+            setTimeout(() => { document.getElementById('auth-screen').style.opacity = '1'; }, 50);
+        }
+
+        function switchAuthView(view) {
+            document.getElementById('auth-login').style.display = 'none';
+            document.getElementById('auth-signup').style.display = 'none';
+            document.getElementById('auth-verify').style.display = 'none';
+            document.getElementById('auth-' + view).style.display = 'flex';
+        }
+        function toggleAuth() { switchAuthView('signup'); }
+
+        function generateId() { return Math.random().toString(36).substr(2, 9).toUpperCase(); }
+
+        function handleSignup() {
+            const comp = document.getElementById('reg-company').value.trim();
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-pass').value;
+
+            if(!comp || !name || !email || !pass) return alert("All fields required.");
+            if(globalDB.users.find(u => u.email === email)) return alert("Email already exists.");
+
+            pendingSignupUser = {
+                id: generateId(), email, pass,
+                settings: { companyName: comp, userName: name, colour: '#3b82f6', logo: '', createdAt: Date.now() },
+                clients: [], products: [], orders: [], invoices: [], discounts: []
+            };
+            
+            expectedVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            document.getElementById('verify-sub').innerText = `Enter the 6-digit code sent to ${email}`;
+            switchAuthView('verify');
+
+            setTimeout(() => {
+                toast(`📧 PROTOTYPE EMAIL: Verification code is <strong style="letter-spacing:2px; font-size:16px;">${expectedVerificationCode}</strong>`);
+            }, 800);
+        }
+
+        function handleVerify() {
+            const code = document.getElementById('verify-code').value.trim();
+            if(code === expectedVerificationCode) {
+                globalDB.users.push(pendingSignupUser);
+                saveGlobal();
+                loginSuccess(pendingSignupUser);
+                pendingSignupUser = null;
+                expectedVerificationCode = null;
+            } else {
+                alert("Invalid verification code. Please check your simulated email toast.");
+            }
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            const user = globalDB.users.find(u => u.email === email && u.pass === pass);
+            
+            if(user) loginSuccess(user);
+            else alert("Invalid credentials. Try using the Demo Account button.");
+        }
+
+        function loginSuccess(user) {
+            activeUserId = user.id; uData = user; 
+            if(!uData.invoices) uData.invoices = []; 
+            if(!uData.discounts) uData.discounts = []; 
+            if(!uData.settings.logo) uData.settings.logo = '';
+            
+            uData.orders.forEach(o => {
+                if(!o.items && o.productId) { o.items = [{ productId: o.productId, qty: o.qty, price: (parseFloat(o.totalPrice)/o.qty) }]; }
+            });
+
+            applyTheme();
+            
+            document.getElementById('auth-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('auth-screen').style.display = 'none';
+                const app = document.getElementById('app-layout');
+                app.style.display = 'flex';
+                setTimeout(() => app.style.opacity = '1', 50);
+                renderEngine();
+                setupDragDrop();
+            }, 500);
+            toast(`Welcome back, ${uData.settings.userName}`);
+        }
+
+        function handleLogout() {
+            activeUserId = null; uData = null; closeDrawer();
+            document.getElementById('app-layout').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('app-layout').style.display = 'none';
+                const auth = document.getElementById('auth-screen');
+                auth.style.display = 'flex';
+                switchAuthView('login');
+                document.getElementById('login-pass').value = '';
+                document.getElementById('verify-code').value = '';
+                setTimeout(() => auth.style.opacity = '1', 50);
+                route('dashboard', document.querySelector('.nav-item')); 
+            }, 500);
+        }
+
+        function saveGlobal() {
+            if(activeUserId) {
+                const idx = globalDB.users.findIndex(u => u.id === activeUserId);
+                if(idx !== -1) globalDB.users[idx] = uData;
+            }
+            localStorage.setItem('kartify_DB_v8', JSON.stringify(globalDB));
+        }
+
+        function applyTheme() {
+            const s = uData.settings;
+            document.documentElement.style.setProperty('--accent', s.colour);
+            let hex = s.colour.replace('#', '');
+            let r = parseInt(hex.substring(0, 2), 16);
+            let g = parseInt(hex.substring(2, 4), 16);
+            let b = parseInt(hex.substring(4, 6), 16);
+            document.documentElement.style.setProperty('--accent-glow', `rgba(${r}, ${g}, ${b}, 0.15)`);
+
+            document.getElementById('ui-user').innerText = s.userName;
+            document.getElementById('ui-avatar').innerText = s.userName.charAt(0).toUpperCase();
+
+            document.getElementById('set-comp').value = s.companyName;
+            document.getElementById('set-name').value = s.userName;
+            document.getElementById('set-color').value = s.colour;
+            document.getElementById('set-logo').value = s.logo;
+        }
+
+        function saveSettings() {
+            uData.settings.companyName = document.getElementById('set-comp').value || 'Kartify';
+            uData.settings.userName = document.getElementById('set-name').value || 'User';
+            uData.settings.colour = document.getElementById('set-color').value;
+            uData.settings.logo = document.getElementById('set-logo').value.trim();
+            applyTheme(); saveGlobal(); toast("Customisations applied.");
+        }
+
+        function wipeAccount() {
+            if(confirm("DANGER: This permanently deletes your workspace data. Proceed?")) {
+                uData.clients = []; uData.products = []; uData.orders = []; uData.invoices = []; uData.discounts = [];
+                saveGlobal(); renderEngine(); toast("Data wiped."); closeDrawer();
+            }
+        }
+
+        function route(view, navElement) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navElement.classList.add('active');
+            document.querySelectorAll('.view-layer').forEach(layer => layer.classList.remove('active'));
+            document.getElementById(`view-${view}`).classList.add('active');
+        }
+
+        function exportCSV(type) {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            if (type === 'clients') {
+                csvContent += "ID,Company,Name,Email,Phone,Industry\n";
+                uData.clients.forEach(c => { csvContent += `${c.id},"${c.company||''}","${c.name||''}","${c.email||''}","${c.phone||''}","${c.industry||''}"\n`; });
+            }
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Kartify_${type}_export.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            toast("CSV Downloaded.");
+        }
+
+        function renderEngine(query = "") {
+            const q = query.toLowerCase();
+
+            const completedOrders = uData.orders.filter(o => o.status === 'Completed');
+            const platformFees = uData.invoices.reduce((sum, inv) => sum + parseFloat(inv.fee), 0);
+
+            let rev = 0; let cogs = 0;
+            completedOrders.forEach(o => {
+                rev += parseFloat(o.totalPrice);
+                if(o.items) {
+                    o.items.forEach(item => {
+                        const prd = uData.products.find(p => p.id === item.productId);
+                        if(prd) cogs += parseFloat(prd.cost) * parseInt(item.qty);
+                    });
+                }
+            });
+            const profit = rev - cogs - platformFees; 
+            const margin = rev > 0 ? ((profit / rev) * 100).toFixed(1) : 0;
+
+            const daysActive = Math.max(1, (Date.now() - uData.settings.createdAt) / (1000 * 60 * 60 * 24));
+            const dailyProfitAvg = profit / daysActive;
+
+            // Stats
+            document.getElementById('kpi-rev').innerText = `£${rev.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('kpi-ord').innerText = uData.orders.filter(o => o.status !== 'Completed').length;
+            document.getElementById('kpi-cli').innerText = uData.clients.length;
+            document.getElementById('kpi-prd').innerText = uData.products.length;
+
+            document.getElementById('fin-rev').innerText = `£${rev.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('fin-cogs').innerText = `£${cogs.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('fin-fees').innerText = `£${platformFees.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('fin-profit').innerText = `£${profit.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('fin-margin').innerText = `${margin}%`;
+
+            document.getElementById('proj-day').innerText = `£${(dailyProfitAvg).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('proj-week').innerText = `£${(dailyProfitAvg * 7).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('proj-month').innerText = `£${(dailyProfitAvg * 30).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('proj-quart').innerText = `£${(dailyProfitAvg * 90).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            document.getElementById('proj-year').innerText = `£${(dailyProfitAvg * 365).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+
+            // Invoices 
+            const listI = document.getElementById('list-invoices');
+            const selI = document.getElementById('inp-inv-order');
+            listI.innerHTML = ''; selI.innerHTML = '<option value="">Select Un-invoiced Order</option>';
+            
+            const invoicedOrderIds = uData.invoices.map(i => i.orderId);
+            uData.orders.filter(o => !invoicedOrderIds.includes(o.id)).forEach(o => {
+                const cName = (uData.clients.find(c => c.id === o.clientId) || {}).name || 'Unknown';
+                selI.innerHTML += `<option value="${o.id}">Order #${o.id.substring(0,6)} - ${cName} - £${parseFloat(o.totalPrice).toFixed(2)}</option>`;
+            });
+
+            uData.invoices.forEach(inv => {
+                const order = uData.orders.find(o => o.id === inv.orderId) || {};
+                const client = uData.clients.find(c => c.id === order.clientId) || {};
+                const clientName = client.company || client.name || 'Unknown';
+                
+                listI.innerHTML += `<tr>
+                    <td style="font-family:monospace; color:var(--text-muted);">#${inv.id.substring(0,6)}</td>
+                    <td style="font-weight:600;">${clientName}</td>
+                    <td style="font-weight:700;">£${parseFloat(inv.total).toFixed(2)}</td>
+                    <td style="color:var(--danger);">-£${parseFloat(inv.fee).toFixed(2)}</td>
+                    <td style="color:var(--success); font-weight:700;">£${parseFloat(inv.net).toFixed(2)}</td>
+                    <td>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-ghost" style="padding:4px 12px; font-size:11px;" onclick="renderInvoiceHTML('${inv.orderId}', '${inv.id}', '${inv.link}')">View</button>
+                            <a href="${inv.link}" target="_blank" class="btn btn-primary" style="padding:4px 12px; font-size:11px; text-decoration:none;">Link</a>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            // Clients
+            const listC = document.getElementById('list-clients');
+            const selC = document.getElementById('inp-ord-client');
+            listC.innerHTML = ''; selC.innerHTML = '<option value="">Select Client</option>';
+            uData.clients.filter(c => c.name.toLowerCase().includes(q) || c.company.toLowerCase().includes(q)).forEach(c => {
+                selC.innerHTML += `<option value="${c.id}">${c.company ? c.company + ' ('+c.name+')' : c.name}</option>`;
+                const spend = uData.orders.filter(o => o.clientId === c.id && o.status === 'Completed').reduce((s, o) => s + parseFloat(o.totalPrice), 0);
+                listC.innerHTML += `<tr class="clickable" onclick="openDrawer('${c.id}')"><td>${c.company || '—'}<br><span style="font-size:12px; color:var(--text-muted);">${c.name}</span></td><td><span class="badge b-purple">${c.industry}</span></td><td>${c.email}</td><td>£${spend.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td></tr>`;
+            });
+
+            // Products 
+            const listP = document.getElementById('list-products');
+            listP.innerHTML = ''; 
+            uData.products.filter(p => p.name.toLowerCase().includes(q)).forEach(p => {
+                const tBadge = p.type === 'physical' ? '<span class="badge b-blue">Physical</span>' : '<span class="badge b-green">Digital</span>';
+                let sStr = p.type === 'physical' ? p.stock : '∞';
+                if(p.type === 'physical' && p.stock < 5) sStr = `<span class="badge b-warn">${p.stock} (Low)</span>`;
+
+                listP.innerHTML += `<tr><td>${p.name}</td><td><span class="badge b-purple">${p.category}</span></td><td>${tBadge}</td><td>£${parseFloat(p.cost).toFixed(2)}</td><td>£${parseFloat(p.sale).toFixed(2)}</td><td>${sStr}</td></tr>`;
+            });
+
+            // Discounts
+            const listD = document.getElementById('list-discounts');
+            const selD = document.getElementById('inp-ord-discount');
+            listD.innerHTML = ''; selD.innerHTML = '<option value="">No Discount Applied</option>';
+            uData.discounts.forEach(d => {
+                let dStr = d.type === 'percentage' ? `${d.value}%` : `£${parseFloat(d.value).toFixed(2)}`;
+                selD.innerHTML += `<option value="${d.id}">${d.code} (-${dStr})</option>`;
+                listD.innerHTML += `<tr><td style="font-family:monospace; font-weight:700;">${d.code}</td><td><span class="badge b-purple">${d.type}</span></td><td style="font-weight:700;">${dStr}</td><td><button class="btn btn-danger-ghost" style="padding:4px 10px;" onclick="deleteDiscount('${d.id}')">Delete</button></td></tr>`;
+            });
+
+            // Kanban
+            ['Pending', 'Processing', 'Completed'].forEach(status => {
+                const col = document.getElementById(`col-${status}`); col.innerHTML = '';
+                const orders = uData.orders.filter(o => o.status === status && o.id.toLowerCase().includes(q));
+                orders.forEach(o => {
+                    const cMatch = uData.clients.find(c => c.id === o.clientId) || {};
+                    const clientName = cMatch.company || cMatch.name || 'Unknown';
+                    const numItems = o.items ? o.items.length : 1;
+                    const prdLabel = numItems > 1 ? `${numItems} Items` : (o.items && o.items[0] ? (uData.products.find(p=>p.id===o.items[0].productId)||{}).name : 'Item');
+                    
+                    const card = document.createElement('div');
+                    card.className = 'k-card'; card.draggable = true; card.id = o.id;
+                    card.innerHTML = `
+                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">#${o.id.substring(0,6)} • ${clientName}</div>
+                        <div style="font-weight:600; font-size:14px; margin-bottom:10px;">${prdLabel}</div>
+                        <div style="color:var(--success); font-weight:700;">£${parseFloat(o.totalPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                    `;
+                    card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', o.id); card.style.opacity = '0.5'; });
+                    card.addEventListener('dragend', () => { card.style.opacity = '1'; });
+                    col.appendChild(card);
+                });
+            });
+        }
+
+        function handleSearch() { renderEngine(document.getElementById('global-search').value); }
+
+        function setupDragDrop() {
+            document.querySelectorAll('.k-dropzone').forEach(zone => {
+                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', e => {
+                    e.preventDefault(); zone.classList.remove('drag-over');
+                    const id = e.dataTransfer.getData('text/plain');
+                    const newStatus = zone.id.replace('col-', '');
+                    const order = uData.orders.find(o => o.id === id);
+                    if(order && order.status !== newStatus) {
+                        order.status = newStatus; saveGlobal(); renderEngine(); toast(`Moved to ${newStatus}`);
+                    }
+                });
+            });
+        }
+
+        function toggleStockField() {
+            const type = document.getElementById('inp-prd-type').value;
+            document.getElementById('stock-group').style.display = type === 'physical' ? 'flex' : 'none';
+        }
+
+        // --- MODERN PREMIUM INVOICE RENDERER ---
+        function renderInvoiceHTML(orderId, invId, payLink) {
+            const order = uData.orders.find(o => o.id === orderId);
+            if(!order) return;
+            const client = uData.clients.find(c => c.id === order.clientId) || {name: 'Unknown', email: ''};
+            
+            const userLogo = uData.settings.logo || '';
+            const logoHtml = userLogo 
+                ? `<img src="${userLogo}" style="max-height: 48px;">` 
+                : `<div style="font-weight:800; font-size:26px; color:#111; letter-spacing:-1px;">${uData.settings.companyName}</div>`;
+
+            let itemsRows = '';
+            let subtotal = 0;
+            if(order.items) {
+                order.items.forEach(item => {
+                    const prd = uData.products.find(p => p.id === item.productId) || {name: 'Deleted Item'};
+                    const lineTotal = parseFloat(item.price) * item.qty;
+                    subtotal += lineTotal;
+                    
+                    let subTag = prd.category === 'Subscription' ? `<div style="font-size:11px; color:#888; margin-top:2px;">Recurring Retainer</div>` : '';
+
+                    itemsRows += `
+                    <tr>
+                        <td>
+                            <div style="font-weight:600; color:#111;">${prd.name}</div>
+                            ${subTag}
+                        </td>
+                        <td style="text-align:center;">${item.qty}</td>
+                        <td>£${lineTotal.toFixed(2)}</td>
+                    </tr>`;
+                });
+            }
+
+            let discountRow = '';
+            if (order.discountAmount && order.discountAmount > 0) {
+                discountRow = `
+                <div class="inv-total-row">
+                    <div>Subtotal</div>
+                    <div>£${subtotal.toFixed(2)}</div>
+                </div>
+                <div class="inv-total-row" style="color:var(--danger); font-weight:600;">
+                    <div>Discount</div>
+                    <div>-£${parseFloat(order.discountAmount).toFixed(2)}</div>
+                </div>`;
+            }
+
+            const isPreview = invId === 'PREVIEW';
+            const badgeClass = isPreview ? 'inv-badge preview' : 'inv-badge';
+            const badgeText = isPreview ? 'PREVIEW MODE' : 'UNPAID';
+
+            document.getElementById('invoice-render-target').innerHTML = `
+                <div class="inv-header">
+                    ${logoHtml}
+                    <div style="text-align:right;">
+                        <div class="${badgeClass}">${badgeText}</div>
+                        <div style="font-size:13px; color:#888; font-weight:600;">INV-${isPreview ? 'DRAFT' : invId.substring(0,8)}</div>
+                        <div style="font-size:13px; color:#aaa; margin-top:2px;">Issued: ${new Date().toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'})}</div>
+                    </div>
+                </div>
+                
+                <div class="inv-client-box">
+                    <div>
+                        <div style="font-weight:700; margin-bottom:8px; font-size:11px; color:#aaa; text-transform:uppercase; letter-spacing:0.5px;">Billed To</div>
+                        <strong>${client.company || client.name}</strong>
+                        <div>${client.email}</div>
+                        ${client.phone ? `<div>${client.phone}</div>` : ''}
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:700; margin-bottom:8px; font-size:11px; color:#aaa; text-transform:uppercase; letter-spacing:0.5px;">From</div>
+                        <strong>${uData.settings.companyName}</strong>
+                        <div>${uData.settings.userName}</div>
+                    </div>
+                </div>
+
+                <table class="inv-table">
+                    <tr>
+                        <th>Description</th>
+                        <th style="text-align:center;">Qty</th>
+                        <th>Amount</th>
+                    </tr>
+                    ${itemsRows}
+                </table>
+                
+                <div class="inv-totals-wrap">
+                    <div class="inv-totals-box">
+                        ${discountRow}
+                        <div class="inv-total-row grand">
+                            <div>Total Due</div>
+                            <div>£${parseFloat(order.totalPrice).toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="inv-footer">
+                    <div class="inv-footer-brand">
+                        <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18" /><path d="M17 6l-8 6 8 6" /></svg>
+                        Powered securely by Kartify
+                    </div>
+                    <div>Safe, automated payment infrastructure.</div>
+                </div>
+            `;
+            openModal('modal-view-invoice');
+        }
+
+        function previewInvoice() {
+            const orderId = document.getElementById('inp-inv-order').value;
+            const link = document.getElementById('inp-inv-link').value.trim();
+            if(!orderId) return toast("Select an order to preview.");
+            renderInvoiceHTML(orderId, 'PREVIEW', link);
+        }
+
+        function createInvoice() {
+            const orderId = document.getElementById('inp-inv-order').value;
+            const link = document.getElementById('inp-inv-link').value.trim();
+            if(!orderId || !link) return toast("Order and Payment Link are required.");
+
+            const order = uData.orders.find(o => o.id === orderId);
+            const total = parseFloat(order.totalPrice);
+            const fee = total * 0.019; 
+            const net = total - fee;
+
+            uData.invoices.unshift({ id: generateId(), orderId, link, total, fee, net, date: Date.now() });
+            saveGlobal(); renderEngine(); closeModals(); toast("Invoice generated. Platform fee applied.");
+        }
+
+        // --- MULTI-PRODUCT ORDER LOGIC ---
+        function addOrdItemRow() {
+            const list = document.getElementById('ord-items-list');
+            const rowId = 'ord-row-' + Date.now() + Math.random().toString(36).substr(2,5);
+            const div = document.createElement('div');
+            div.className = 'form-grid';
+            div.id = rowId;
+            div.style.marginBottom = '10px';
+            
+            let prdOptions = '<option value="">Select Item</option>';
+            uData.products.forEach(p => prdOptions += `<option value="${p.id}">${p.name} - £${p.sale}</option>`);
+            
+            div.innerHTML = `
+                <div class="form-group" style="margin-bottom:0;"><select class="input-style prd-sel enter-ord">${prdOptions}</select></div>
+                <div class="form-group" style="margin-bottom:0; display:flex; flex-direction:row; gap:10px;">
+                    <input type="number" class="input-style prd-qty enter-ord" value="1" min="1" style="width:80px;">
+                    <button type="button" class="btn btn-danger-ghost" style="padding: 0 15px;" onclick="document.getElementById('${rowId}').remove()">✕</button>
+                </div>
+            `;
+            list.appendChild(div);
+            bindEnterKeys(); 
+        }
+
+        function openOrderModal() {
+            document.getElementById('ord-items-list').innerHTML = '';
+            document.getElementById('loyalty-suggestion-box').innerHTML = '';
+            addOrdItemRow(); 
+            openModal('modal-order');
+        }
+
+        function createOrder() {
+            const clientId = document.getElementById('inp-ord-client').value;
+            const discountId = document.getElementById('inp-ord-discount').value;
+            if(!clientId) return toast("Client is required.");
+
+            const rows = document.querySelectorAll('#ord-items-list .form-grid');
+            if(rows.length === 0) return toast("Add at least one item.");
+
+            let items = [];
+            let subtotal = 0;
+            let stockError = false;
+
+            rows.forEach(row => {
+                const pId = row.querySelector('.prd-sel').value;
+                const qty = parseInt(row.querySelector('.prd-qty').value);
+                if(!pId || qty < 1) return;
+
+                const prd = uData.products.find(p => p.id === pId);
+                if(prd.type === 'physical' && prd.stock < qty) {
+                    stockError = true;
+                    alert(`Insufficient stock for ${prd.name}. Only ${prd.stock} left.`);
+                }
+                items.push({ productId: pId, qty: qty, price: prd.sale });
+                subtotal += parseFloat(prd.sale) * qty;
+            });
+
+            if(stockError || items.length === 0) return;
+
+            let discountAmount = 0;
+            if(discountId) {
+                const dsc = uData.discounts.find(d => d.id === discountId);
+                if(dsc) {
+                    if(dsc.type === 'percentage') discountAmount = subtotal * (parseFloat(dsc.value) / 100);
+                    else discountAmount = parseFloat(dsc.value);
+                }
+            }
+
+            const totalPrice = Math.max(0, subtotal - discountAmount);
+
+            items.forEach(item => {
+                const prd = uData.products.find(p => p.id === item.productId);
+                if(prd.type === 'physical') prd.stock -= item.qty;
+            });
+
+            uData.orders.unshift({ id: generateId(), clientId, items, totalPrice: totalPrice.toFixed(2), discountId, discountAmount: discountAmount.toFixed(2), status: "Pending", date: Date.now() });
+            saveGlobal(); renderEngine(); closeModals(); toast("Order processed.");
+        }
+
+        function createDiscount() {
+            const code = document.getElementById('inp-dsc-code').value.trim().toUpperCase();
+            const type = document.getElementById('inp-dsc-type').value;
+            const value = parseFloat(document.getElementById('inp-dsc-val').value);
+
+            if(!code || value <= 0) return toast("Valid code and amount required.");
+            
+            uData.discounts.unshift({ id: generateId(), code, type, value });
+            saveGlobal(); renderEngine(); closeModals(); toast("Promotional code activated.");
+        }
+        
+        function deleteDiscount(id) {
+            uData.discounts = uData.discounts.filter(d => d.id !== id);
+            saveGlobal(); renderEngine(); toast("Promotional code revoked.");
+        }
+
+        function createProduct() {
+            const name = document.getElementById('inp-prd-name').value.trim();
+            const category = document.getElementById('inp-prd-category').value;
+            const type = document.getElementById('inp-prd-type').value;
+            const cost = document.getElementById('inp-prd-cost').value;
+            const sale = document.getElementById('inp-prd-sale').value;
+            const stock = document.getElementById('inp-prd-stock').value;
+
+            if(!name) return toast("Name required");
+            uData.products.unshift({ id: generateId(), name, category, type, cost: parseFloat(cost).toFixed(2), sale: parseFloat(sale).toFixed(2), stock: parseInt(stock)||0 });
+            saveGlobal(); renderEngine(); closeModals(); document.getElementById('ai-suggestion-box').innerHTML = ''; toast("Item added to catalogue.");
+        }
+
+        function createClient() {
+            const company = document.getElementById('inp-cli-company').value.trim();
+            const name = document.getElementById('inp-cli-name').value.trim();
+            const email = document.getElementById('inp-cli-email').value.trim();
+            const phone = document.getElementById('inp-cli-phone').value.trim();
+            const industry = document.getElementById('inp-cli-industry').value;
+            const tags = document.getElementById('inp-cli-tags').value.trim();
+
+            if(!name || !email) return toast("Name and Email required");
+            uData.clients.unshift({ id: generateId(), company, name, email, phone, industry, tags });
+            saveGlobal(); renderEngine(); closeModals(); toast("Client onboarded.");
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModals() { 
+            document.querySelectorAll('.modal-wrap').forEach(m => m.classList.remove('open')); 
+            document.querySelectorAll('input:not([type="color"]), select').forEach(i => i.value = '');
+            const box = document.getElementById('ai-suggestion-box'); if(box) box.innerHTML = '';
+        }
+
+        function toast(msg) {
+            const box = document.getElementById('toast-box');
+            const t = document.createElement('div'); t.className = 'toast';
+            t.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> ${msg}`;
+            box.appendChild(t);
+            setTimeout(() => { t.style.animation = 'toastOut 0.4s var(--spring) forwards'; setTimeout(()=>t.remove(), 400); }, 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
