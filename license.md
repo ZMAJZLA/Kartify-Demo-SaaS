@@ -1,4 +1,4 @@
-Copyright (c) 2026 Jamie Karter / Karter IT Solutions. All Rights Reserved.
+Copyright (c) 2026 Jamie Karter / Karter Group Technologies. All Rights Reserved.
 
 This software and associated documentation files (the "Software") are proprietary and confidential. 
 No part of this Software may be copied, reproduced, distributed, republished, downloaded, displayed, 
